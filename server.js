@@ -126,4 +126,4 @@ io.on('connection', function (socket) {
     })
 });
 
-server.listen(7777);
+server.listen(7777);        //I just can't allow to listen 80, idk
