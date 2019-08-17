@@ -102,6 +102,7 @@
                 waitAlert = new alertObject('Waiting');
             }
         });
+        //
         socket.on('securityValue', function (data) {
             if (securityValue == data) {
                 readyState = true;
