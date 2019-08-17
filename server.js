@@ -29,6 +29,8 @@ requireLogin=function(req,res,next){
     next();
 }
 
+// routers
+
 var scriptRouter=require('./routers/scriptRouter')
 app.use('/',scriptRouter)
 
