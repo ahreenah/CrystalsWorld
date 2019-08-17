@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>
+		login
+	</title>
+</head>
+<body>
+	<form action="/register" method="POST">
+		<div id="alertDiv"></div>
+		<input type="text" name="login" placeholder="login" /><br>
+		<input type="password" name="password" placeholder="password" /><br>
+		<input type="password" name="passwordRepeat" placeholder="repeat password" /><br>
+        <input type="submit">
+	</form>
+	<a href="/login">Already registered? Login.</a>
+	<script type="text/javascript">
+		let url=new URL(document.location)
+		if (url.searchParams.get('error')=='exists'){
+			alertDiv.innerHTML='user with this login already exists';
+		}
+		if (url.searchParams.get('error')=='differentPasswords'){
+			alertDiv.innerHTML='Password and password repeat should be the same';
+		}
+	</script>
+</body>
+</html>
