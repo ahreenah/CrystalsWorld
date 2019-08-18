@@ -102,6 +102,11 @@ async function test(){
     console.log('test ended')
 }
 
+async function getAllCards(){
+    return await all('SELECT * FROM cards');
+}
+
+
 async function decksTest() {
     console.log(await getUserDecks('c'));
     console.log(await setDeck('c',2,[1,2,4]))
@@ -115,4 +120,4 @@ module.exports.getUserDecks=getUserDecks;
 module.exports.getDeck=getDeck;
 module.exports.deleteDeck=deleteDeck;
 module.exports.setDeck=setDeck;
-
+module.exports.getAllCards=getAllCards;

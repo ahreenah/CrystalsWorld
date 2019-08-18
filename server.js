@@ -14,6 +14,13 @@ var bodyParser = require('body-parser');
 var sqlite3Wrap = require('./scripts/sqlite3Wrap');
 var fs = require('fs');
 
+async function f() {
+  console.log(await sqlite3Wrap.getAllCards())
+}
+f();
+
+
+
 var searchGameId=1;
 var playerId=1;
 
@@ -21,6 +28,8 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(require('express').static('static'));
 
 // WARNING: app.listen(80) will NOT work here!
+
+var allCards=[];
 
 requireLogin=function(req,res,next){
   if(req.session.login==null)
@@ -82,6 +91,9 @@ io.on('connection', function (socket) {
   socket.on('getDeckList',async function(data){
     socket.emit('sendDeckList',{uid:data.userId,decks:await sqlite3Wrap.getUserDecks(data.userId)});
   })
+  socket.on('getAllCards',async function(data){
+    socket.emit('allCards',await sqlite3Wrap.getAllCards());
+  })
   socket.on('concede', function (data) {
     socket.broadcast.emit('concede', {gameId:data});
   });
@@ -89,30 +101,13 @@ io.on('connection', function (socket) {
     console.log('security value is '+data)
     socket.broadcast.emit('securityValue', data);
   });
-  socket.on('getCollection',function(data){
+  socket.on('getCollection',async function(data){
     console.log(data)
     console.log('sending collection');
-    socket.emit('collection',
-      [
-            {name:'bab',attack:1,cost:2,health:1,abilities:'',id:0},
-            {name:'ban',attack:4,cost:2,health:3,abilities:'',id:1},
-            {name:'bak',attack:5,cost:5,health:5,abilities:'r',id:2},
-            {name:'bat',attack:1,cost:2,health:2,abilities:'rs',id:3},
-            {name:'foo',attack:8,cost:8,health:8,abilities:'i',id:4},
-            {name:'bar',attack:1,cost:2,health:3,abilities:'',id:5},
-            {name:'baz',attack:1,cost:2,health:3,abilities:'rsi',id:6},
-            {name:'bank',attack:1,cost:2,health:3,abilities:'',id:7},
-            {name:'basta',attack:3,cost:2,health:3,abilities:'',id:8},
-      ]
-    )
+    socket.emit('collection',await sqlite3Wrap.getUserCollection(data))
   })
   socket.on('getCraftable',async function(data){
-    socket.emit('craftable',
-      [
-        {name:'bab',attack:1,cost:2,health:1,abilities:'',id:0},
-        {name:'ban',attack:4,cost:2,health:3,abilities:'',id:1},
-        {name:'bak',attack:5,cost:5,health:5,abilities:'r',id:2},
-      ])
+    socket.emit('craftable', [0,2,4,6,8])
   })
   socket.on('addDeck',async function(data){
     console.log(data);
