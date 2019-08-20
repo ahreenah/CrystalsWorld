@@ -23,17 +23,16 @@
 		const userId='<!--login-->';
 		function getDeck(num){
 			socket.emit('getDeck',{userId:userId,deckId:num})
+			return new Promise((res,rej) => {
+				socket.on('sendDeck',function(a){
+					res(a.deck);
+		        })
+			})
 		}
 		function getDeckList(){
 			socket.emit('getDeckList',{userId:userId})
 		}
-		socket.on('sendDeck',function(a){
-			console.log('got');
-			console.log(a);
-			a.deck.forEach(i=>{
-			    addDeckCard(collectionCards[i])
-			});
-		})
+		
 		socket.on('sendDeckList',function(a){
 			document.getElementById('deckList').innerHTML='';
 		    a.decks.forEach(i=>{
@@ -79,8 +78,15 @@
 			document.getElementById('allCards').innerHTML='';
 		}
 		function addDeckCard(card){
+			console.log('allCards: ')
+			console.log(allCards)
+			console.log('card:' );
+			console.log(card)
+			card=allCards[card];
+			console.log(`sadding ${card} to deck`)
 			console.log(card);
 			thisCardId=lastCardId++;
+			//c=card.card
 			console.log('card:' +card)
 			deckCards.push({name:card.name,cardId:thisCardId,card:card});
 			document.getElementById('deckView').innerHTML+=`
@@ -134,34 +140,40 @@
 		    })
 	      })
 		}
-        async function getCollection(num){
-        	socket.emit('getCollection',{userId:userId,deck:num-1});
-        	return await tWait();
-            /*return [
-			    {name:'bab',attack:1,cost:2,health:1,abilities:''},
-		        {name:'ban',attack:4,cost:2,health:3,abilities:''},
-		        {name:'bak',attack:5,cost:2,health:5,abilities:'r'},
-		        {name:'bat',attack:1,cost:2,health:2,abilities:'rs'},
-		        {name:'foo',attack:8,cost:8,health:8,abilities:'i'},
-		        {name:'bar',attack:1,cost:2,health:1,abilities:''},
-		        {name:'baz',attack:1,cost:2,health:3,abilities:'rsi'},
-		        {name:'bank',attack:1,cost:2,health:3,abilities:''},
-		        {name:'basta',attack:3,cost:2,health:3,abilities:''},
-		    ]*/
-        }
+       function getCollection(){
+			return new Promise((res,rej)=>{
+			socket.emit('getCollection',userId)
+			socket.on('collection',i=>{
+				console.log(i);
+				collectionCards=[];
+				i.forEach(j=>{
+					//collectionCardNumbers.push(j.card);
+					collectionCards.push(j.card)
+				})
+				res(collectionCards)
+
+			})
+			})
+		}
 		async function editDeck(num){
 		    deckNumber=num-1;
+			
+            //collectionCards=await getCollection(num);
 			console.log('Editing deck '+num)
 			document.getElementById('deckList').style.display='none'
 			document.getElementById('deckEditor').style.display='block'
 			document.getElementById('saveButton').style.display='block'
 			document.getElementById('collectionButton').style.display='none'
 			freeDeck();
+			
 			freeCollection();
+			console.log('collection is free')
 			isEditingDeck=true;
-            collectionCards=await getCollection(num);
-            collectionCards.forEach(i=>{addCardToCollection(i)})
+			let collectionCards=await getCollection();
+			console.log('got collection cards' + collectionCards)
+            collectionCards.forEach(i=>{addCardToCollection(allCards[i])})
 			getDeck(num);
+			(await getDeck(num)).forEach(i=>{addDeckCard(i)});
 		}
 		thisColCardId=0;
 		function popCollectionCard(cId){
