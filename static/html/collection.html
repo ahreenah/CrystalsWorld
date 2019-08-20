@@ -60,15 +60,7 @@
 			socket.emit('addDeck',{user:userId})
 		}
 		thisColCardId=0;*/
-		function addCardToCollection(card){
-		    document.getElementById('collection').innerHTML+=`
-		    	<div class="cardInCollection" id='cardInCollection`+(thisColCardId)+`' onclick='popCollectionCard(`+thisColCardId+`)'>
-            		`+card.name+``+`<div>(`+card.attack+`/`+card.health+`/`+card.cost+`)</div>
-            		`+card.abilities+`
-            	</div>`;
-            collectionCards.push({card:card,cardId:thisColCardId});
-            thisColCardId++;
-		}
+		
 		thisCraftCardId=0;
 		function addCardToCraftable(card){
 			document.getElementById('craftable').innerHTML+=`
@@ -102,11 +94,14 @@
 			thisColCardId++;
 		}
 		function showCollection(){
+			console.log('SHOWING COLLECTION '+collectionCards.length)
 			collectionCards.forEach(i=>{
 				console.log(allCards[i])
+				addCardToCollection(allCards[i]);
 			})
 		}
-		async function getCollection(){
+		function getCollection(){
+			return new Promise((res,rej)=>{
 			socket.emit('getCollection',userId)
 			socket.on('collection',i=>{
 				console.log(i);
@@ -115,7 +110,9 @@
 					collectionCardNumbers.push(j.card);
 					collectionCards.push(j.card)
 				})
+				res()
 
+			})
 			})
 		}
 		/*async function getCraftable(){
@@ -169,10 +166,11 @@
 			await getCollection();
 			//getCraftable();
 			await getAllCards();
-			calcCollectionCards();
-			setCollection(collectionCards)
-			calcCraftableCards();
+			await calcCollectionCards();
+			//setCollection(collectionCards)
+			await calcCraftableCards();
 			setCraftable(craftableCards)
+			collectionCards.forEach(i=>{addCardToCollection(i)})
 		}
 		load();
 	</script>
