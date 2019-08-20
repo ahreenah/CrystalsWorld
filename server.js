@@ -104,6 +104,7 @@ io.on('connection', function (socket) {
   socket.on('getCollection',async function(data){
     console.log(data)
     console.log('sending collection');
+    console.log(await sqlite3Wrap.getUserCollection(data));
     socket.emit('collection',await sqlite3Wrap.getUserCollection(data))
   })
   socket.on('getCraftable',async function(data){

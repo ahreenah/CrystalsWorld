@@ -6,7 +6,17 @@
 	</title>
 	<script src="/socket.io/socket.io.js"></script>
 	<script type="text/javascript">
-
+        var allCards = [
+              {name: 'bab', attack: 1, cost: 2, health: 1, abilities: '', id: 0},
+              {name: 'ban', attack: 4, cost: 2, health: 3, abilities: '', id: 1},
+              {name: 'bak', attack: 5, cost: 2, health: 5, abilities: 'r', id: 2},
+              {name: 'bat', attack: 1, cost: 2, health: 2, abilities: 'rs', id: 3},
+              {name: 'foo', attack: 8, cost: 8, health: 8, abilities: 'i', id: 4},
+              {name: 'bar', attack: 1, cost: 2, health: 1, abilities: '', id: 5},
+              {name: 'baz', attack: 1, cost: 2, health: 3, abilities: 'rsi', id: 6},
+              {name: 'bank', attack: 1, cost: 2, health: 3, abilities: '', id: 7},
+              {name: 'basta', attack: 3, cost: 2, health: 3, abilities: '', id: 8},
+         ]
         var deckNumber=0;
 		var socket = io.connect('http://localhost');
 		// addDeckCard для добавления карты в колоду
@@ -71,6 +81,7 @@
 		function addDeckCard(card){
 			console.log(card);
 			thisCardId=lastCardId++;
+			console.log('card:' +card)
 			deckCards.push({name:card.name,cardId:thisCardId,card:card});
 			document.getElementById('deckView').innerHTML+=`
 			<div class="cardInDeck" id='cardInDeck`+(thisCardId)+`' onclick='popDeckCard(`+thisCardId+`)'>
