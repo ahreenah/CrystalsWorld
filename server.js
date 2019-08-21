@@ -120,6 +120,9 @@ io.on('connection', function (socket) {
     socket.emit('deckAdded',num);
     console.log('deck was added');
   })
+  socket.on('craft', async function(data){
+    console.log(`${data.userId} is crafting ${data.cardName}`)
+  })
 });
 
 server.listen(80);
