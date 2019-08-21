@@ -64,7 +64,7 @@
 			if(found){//возвращает в колоду не то что надо
 				card=deckCards[retval]
 				deckCards.splice(retval,1);
-				addCardToCollection(card.card);
+				//addCardToCollection(card.card);
 				document.getElementById('cardInDeck'+cId).style.display='none'
 			}
 			//alert(found+' '+retval);
@@ -82,7 +82,8 @@
 			console.log(allCards)
 			console.log('card:' );
 			console.log(card)
-			card=allCards[card];
+			if (typeof card==="number")
+			    card=allCards[card];
 			console.log(`sadding ${card} to deck`)
 			console.log(card);
 			thisCardId=lastCardId++;
