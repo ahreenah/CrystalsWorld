@@ -60,11 +60,26 @@
 			socket.emit('addDeck',{user:userId})
 		}
 		thisColCardId=0;*/
-		function popCraftableCard(num){
+		async function popCraftableCard(num){
             console.log('crafting '+num+'. this is:')
-			addCardToCollection(craftableCards[num])
-			//console.log(craftableCards[num])
 			socket.emit('craft',{userId,cardName:craftableCards[num].name})
+			function getPromise() {
+				return new Promise((res, rej) => {
+					socket.on('doCraft', function (answer) {
+						if (answer.success)
+							res('success')
+						else
+							res('not success')
+					});
+					setTimeout(1000, () => {
+						res('error')
+					})
+				});
+			};
+			let can=(await getPromise());
+            console.log(can)
+			if (can==='success')
+				addCardToCollection(craftableCards[num])
 		}
 		thisCraftCardId=0;
 		function addCardToCraftable(card){

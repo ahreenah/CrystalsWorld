@@ -11,11 +11,11 @@ app.use(session({ secret: 'keyboard cat', resave:true}))
 
 var io = require('socket.io')(server);
 var bodyParser = require('body-parser');
-var sqlite3Wrap = require('./scripts/sqlite3Wrap');
+var {getAllCards, getDeck, getUserCollection, getUserDecks, setDeck, findCardByName, userPay, addUserCollectionCard} = require('./scripts/sqlite3Wrap');
 var fs = require('fs');
 
 async function f() {
-  console.log(await sqlite3Wrap.getAllCards())
+  console.log(await getAllCards())
 }
 f();
 
@@ -79,20 +79,20 @@ io.on('connection', function (socket) {
   socket.on('deck', async function (data) {
     console.log('deck socket received')
     console.log(data);
-    await sqlite3Wrap.setDeck(data.user,data.deckNum,data.deck)
+    await setDeck(data.user,data.deckNum,data.deck)
     socket.emit('deckSaved',true)
     //socket.broadcast.emit('field', {gameId:searchGameId, field:data});
   });
   socket.on('getDeck',async function(data) {
     console.log('user: '+data.userId);
     console.log('deck: '+data.deckId);
-    socket.emit('sendDeck',{uid:data.userId,deckId:data.deckId,deck:await sqlite3Wrap.getDeck(data.userId,data.deckId)});
+    socket.emit('sendDeck',{uid:data.userId,deckId:data.deckId,deck:await getDeck(data.userId,data.deckId)});
   })
   socket.on('getDeckList',async function(data){
-    socket.emit('sendDeckList',{uid:data.userId,decks:await sqlite3Wrap.getUserDecks(data.userId)});
+    socket.emit('sendDeckList',{uid:data.userId,decks:await getUserDecks(data.userId)});
   })
   socket.on('getAllCards',async function(data){
-    socket.emit('allCards',await sqlite3Wrap.getAllCards());
+    socket.emit('allCards',await getAllCards());
   })
   socket.on('concede', function (data) {
     socket.broadcast.emit('concede', {gameId:data});
@@ -104,15 +104,15 @@ io.on('connection', function (socket) {
   socket.on('getCollection',async function(data){
     console.log(data)
     console.log('sending collection');
-    console.log(await sqlite3Wrap.getUserCollection(data));
-    socket.emit('collection',await sqlite3Wrap.getUserCollection(data))
+    console.log(await getUserCollection(data));
+    socket.emit('collection',await getUserCollection(data))
   })
   socket.on('getCraftable',async function(data){
     socket.emit('craftable', [0,2,4,6,8])
   })
   socket.on('addDeck',async function(data){
     console.log(data);
-    let currentDecks=await sqlite3Wrap.getUserDecks(data.user);
+    let currentDecks=await getUserDecks(data.user);
     console.log(currentDecks);
     let num=0;
     while (currentDecks.indexOf(num)!=-1)
@@ -121,7 +121,25 @@ io.on('connection', function (socket) {
     console.log('deck was added');
   })
   socket.on('craft', async function(data){
-    console.log(`${data.userId} is crafting ${data.cardName}`)
+    console.log(`${data.userId} is crafting ${data.cardName}`);
+    let foundCard=await findCardByName(data.cardName);
+    if (foundCard.length==0){
+      socket.emit('doCraft',{cardName:data.cardName,success:false});
+      return;
+    }
+    foundCard=foundCard[0];
+    console.log('CARD: ');
+    console.log(foundCard);
+    console.log(`PAY: `);
+    let success=await userPay(data.userId, foundCard.coinCost);
+    console.log(success);
+    if (success){
+      await addUserCollectionCard(data.userId, foundCard.id-1);
+      console.log('SUCCESS')
+      socket.emit('doCraft',{cardName:data.cardName,success:true});
+      return;
+    }
+    socket.emit('doCraft',{cardName:data.cardName,success:false});
   })
 });
 

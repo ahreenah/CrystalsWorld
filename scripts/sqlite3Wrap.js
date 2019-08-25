@@ -86,6 +86,20 @@ async function setDeck(userId,deckId,deck){
     }
 }
 
+async function findCardByName(cardName){
+    return await all (`SELECT * FROM cards WHERE name="${cardName}"`)
+}
+
+async function userPay(userId,coins){
+    let nowCoins=await all(`SELECT coins FROM users WHERE login="${userId}" AND coins>=${coins}`);
+    if(nowCoins.length>0) {
+        await db.run(`UPDATE users SET coins=coins-${coins} WHERE login="${userId}"`);
+        return true;
+    }
+    return false;
+
+}
+
 async function test(){
     console.log(await register('catty','dog'));
     console.log(await getUsers('cat'));
@@ -121,3 +135,5 @@ module.exports.getDeck=getDeck;
 module.exports.deleteDeck=deleteDeck;
 module.exports.setDeck=setDeck;
 module.exports.getAllCards=getAllCards;
+module.exports.findCardByName=findCardByName;
+module.exports.userPay=userPay;
