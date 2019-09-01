@@ -181,7 +181,10 @@
 					craftableCards.push(allCards[i])
 			}
 		}
-
+		socket.on('coins',function (data){
+			console.log(data)
+			coins.innerHTML=data;
+		})
 		async function load() {
 			await getCollection();
 			//getCraftable();
@@ -193,6 +196,7 @@
 			collectionCards.forEach(i=>{addCardToCollection(i)})
 		}
 		load();
+		socket.emit('getCoins',userId);
 	</script>
 
 	<style>
@@ -314,7 +318,7 @@
 	<div id="bottomMenuPart">
 		<input type="button" name="" value='go back' onclick="goBack()">
 		<div style='display:flex;flex-grow:1'></div>
-
+		<div id="coinView">coins:<span id="coins">2</span></div>
 	</div>
 </div>
 </body>
