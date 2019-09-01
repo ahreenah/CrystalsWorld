@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>
+		Your Collection;
+	</title>
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+
+		var socket = io.connect('http://localhost');
+		const userId='<!--login-->';
+		var collectionCards=[];
+		var allCards=[];
+		var collectionCardNumbers=[];
+		var craftableCards=[];
+		lastCardId=0;
+		function freeCollection(){
+			collectionCards=[];
+			document.getElementById('allCards').innerHTML='';
+		}
+		function goBack(){
+			location.replace('/editDecks')
+		}
+		/*function tWait(){
+		  return new Promise(function(resolve,reject){
+		  	socket.on('collection',function(data){
+			  resolve(data)
+		    })
+	      })
+		}
+        async function getCollection(num){
+        	socket.emit('getCollection',{userId:userId,deck:num-1});
+        	return await tWait();
+        }
+		function popCollectionCard(cId){
+			num=0
+			found=false;
+			retval=0;
+			collectionCards.forEach(function(i){
+				if (i.cardId==cId){
+					console.log('f')
+					retval=num;
+					found=true;
+				}
+				else{
+					console.log('n')
+				    num++;
+				}
+			});
+			num--;
+			if(found){
+				card=collectionCards[retval];
+				//collectionCards.splice(retval,1);
+				addDeckCard(card.card);
+				//document.getElementById('cardInCollection'+cId).style.display='none'
+			}
+			//alert(found+' '+retval);
+		}
+		function addDeck(){
+			socket.emit('addDeck',{user:userId})
+		}
+		thisColCardId=0;*/
+		async function popCraftableCard(num){
+            console.log('crafting '+num+'. this is:')
+			socket.emit('craft',{userId,cardName:craftableCards[num].name})
+			function getPromise() {
+				return new Promise((res, rej) => {
+					socket.on('doCraft', function (answer) {
+						if (answer.success)
+							res('success')
+						else
+							res('not success')
+					});
+					setTimeout(1000, () => {
+						res('error')
+					})
+				});
+			};
+			let can=(await getPromise());
+            console.log(can)
+			if (can==='success')
+				addCardToCollection(craftableCards[num])
+		}
+		thisCraftCardId=0;
+		function addCardToCraftable(card){
+			document.getElementById('craftable').innerHTML+=`
+		    	<div class="cardInCollection" id='cardInCraftable`+(thisCraftCardId)+`' onclick='popCraftableCard(`+thisCraftCardId+`)'>
+            		`+card.name+``+`<div>(`+card.attack+`/`+card.health+`/`+card.manaCost+`)</div>
+            		`+card.abilities+`
+            	</div>`;
+			//collectionCards.push({card:card,cardId:thisColCardId});
+			thisCraftCardId++;
+		}
+		async function setCollection(col){
+            col.forEach(i=>{
+            	addCardToCollection(i);
+            })
+		}
+
+		async function setCraftable(col){
+			col.forEach(i=>{
+				addCardToCraftable(i);
+			})
+		}
+
+		var thisColCardId=0;
+		function addCardToCollection(card){
+			document.getElementById('collection').innerHTML+=`
+		    	<div class="cardInCollection" id='cardInCollection`+(thisColCardId)+`' onclick='popCollectionCard(`+thisColCardId+`)'>
+            		`+card.name+``+`<div>(`+card.attack+`/`+card.health+`/`+card.manaCost+`)</div>
+            		`+card.abilities+`
+            	</div>`;
+			collectionCards.push({card:card,cardId:thisColCardId});
+			thisColCardId++;
+		}
+		function showCollection(){
+			console.log('SHOWING COLLECTION '+collectionCards.length)
+			collectionCards.forEach(i=>{
+				console.log(allCards[i])
+				addCardToCollection(allCards[i]);
+			})
+		}
+		function getCollection(){
+			return new Promise((res,rej)=>{
+			socket.emit('getCollection',userId)
+			socket.on('collection',i=>{
+				console.log(i);
+				collectionCards=[];
+				i.forEach(j=>{
+					collectionCardNumbers.push(j.card);
+					collectionCards.push(j.card)
+				})
+				res()
+
+			})
+			})
+		}
+		/*async function getCraftable(){
+            socket.emit('getCraftable')
+            socket.on('craftable',i=>{
+                console.log(i);
+                craftableCards=i;
+            })
+        }*/
+		async function getAllCards(){
+			return new Promise((res,rej)=>{
+				socket.emit('getAllCards')
+				socket.on('allCards',i=>{
+					console.log(i);
+					allCards=i;
+					res(true);
+				})
+			})
+		}
+		function calcCraftableCards(){
+			craftableCards=[];
+			let i=0;
+			while(i<allCards.length){
+				if (true)i++
+			}
+		}
+		function calcCollectionCards(){
+			console.log('calc')
+			console.log(collectionCards);
+			let oldCollection=[];
+			collectionCards.forEach(i=>{
+				oldCollection.push(i);
+			})
+			collectionCards=[];
+			oldCollection.forEach(i=>{
+				if(allCards[i])
+				    collectionCards.push(allCards[i]);
+			});
+			console.log(collectionCards);
+		}
+
+		function calcCraftableCards(){
+			let i=0;
+			for(;i<allCards.length;i++){
+				if(collectionCardNumbers.indexOf(i)==-1)
+					craftableCards.push(allCards[i])
+			}
+		}
+
+		async function load() {
+			await getCollection();
+			//getCraftable();
+			await getAllCards();
+			await calcCollectionCards();
+			//setCollection(collectionCards)
+			await calcCraftableCards();
+			setCraftable(craftableCards)
+			collectionCards.forEach(i=>{addCardToCollection(i)})
+		}
+		load();
+	</script>
+
+	<style>
+		*{
+			margin: 0;
+			padding: 0;
+		}
+		#menu{
+			height:400px;
+			width:900px;
+			background-color: grey;
+		}
+		#mainMenuPart{
+			height:290px;
+			padding:20px;
+		}
+		#bottomMenuPart{
+			height:70px;
+			padding:10px;
+			display:flex;
+			flex-direction:row;
+		}
+		#bottomMenuPart > input{
+			height:50px;
+			padding:5px;
+		}
+		#deckList,#deckEditor{
+			background-color: lightgrey;
+			height:300px;
+		}
+		#deckEditor{
+			display:none;
+		}
+		.deckButton{
+			padding:10px;
+			font-size:20px;
+		}
+		#collectionEditGrid{
+			display:grid;
+			grid-template-columns: 50% 50%;
+		}
+		#deckView, #allCards{
+			height:250px;
+		}
+		#deckView{
+			margin-left:5px;
+			background-color:#888888;
+			overflow: auto;
+		}
+		#allCards{
+			margin-left:5px;
+			margin-right:5px;
+			background-color:#888888;
+			display:grid;
+			grid-template-columns:repeat(5,20%);
+			grid-template-rows:repeat(100,55px);
+			overflow-y:auto;
+		}
+		#saveButton{
+			display:none;
+		}
+		.cardInCollection{
+			background-color:#EEEEEE;
+			margin:2px;
+			padding:2px;
+			height:50px;
+		}
+		.cardList{
+			padding:5px;
+			margin:1px;
+			height:285px;
+			background-color: lightgray;
+			display:grid;
+			grid-template-columns:25% 25% 25% 25%;
+			grid-template-rows:repeat(100,60px);
+			overflow-y:scroll;
+		}
+		#userInfo{
+			border-color:#335544;
+			border-width:2px;
+			position:fixed;
+			right:20px;
+			width:100px;
+			padding:5px;
+			border-style:solid;
+			border-radius:5px;
+		}
+		#userInfo img{
+			height:32px;
+
+		}
+		.horGrid{
+			display: grid;
+			grid-template-columns: auto auto;
+		}
+	</style>
+</head>
+<body>
+<div id='userInfo'>
+	<div>
+		<div class='horGrid'>
+			<img src='/img/user.png'>
+			<div class='verGrid'>
+				<div><!--login--></div>
+				<div><a class='btn' href='/logout'> Log out</a></div>
+			</div>
+		</div>
+	</div>
+</div>
+<div id='menu'>
+	<div id='mainMenuPart'>
+		<div id="collectionEditGrid">
+			<div>Your cards:</div>
+			<div>You can craft:</div>
+			<div class="cardList" id='collection'></div>
+			<div class="cardList" id="craftable"></div>
+		</div>
+	</div>
+	<div id="bottomMenuPart">
+		<input type="button" name="" value='go back' onclick="goBack()">
+		<div style='display:flex;flex-grow:1'></div>
+
+	</div>
+</div>
+</body>
+</html>

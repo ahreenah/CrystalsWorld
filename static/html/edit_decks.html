@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>
+		Edit Your Decks;
+	</title>
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+        var allCards = [
+              {name: 'bab', attack: 1, cost: 2, health: 1, abilities: '', id: 0},
+              {name: 'ban', attack: 4, cost: 2, health: 3, abilities: '', id: 1},
+              {name: 'bak', attack: 5, cost: 2, health: 5, abilities: 'r', id: 2},
+              {name: 'bat', attack: 1, cost: 2, health: 2, abilities: 'rs', id: 3},
+              {name: 'foo', attack: 8, cost: 8, health: 8, abilities: 'i', id: 4},
+              {name: 'bar', attack: 1, cost: 2, health: 1, abilities: '', id: 5},
+              {name: 'baz', attack: 1, cost: 2, health: 3, abilities: 'rsi', id: 6},
+              {name: 'bank', attack: 1, cost: 2, health: 3, abilities: '', id: 7},
+              {name: 'basta', attack: 3, cost: 2, health: 3, abilities: '', id: 8},
+         ]
+        var deckNumber=0;
+		var socket = io.connect('http://localhost');
+		// addDeckCard для добавления карты в колоду
+		const userId='<!--login-->';
+		function getDeck(num){
+			socket.emit('getDeck',{userId:userId,deckId:num})
+			return new Promise((res,rej) => {
+				socket.on('sendDeck',function(a){
+					res(a.deck);
+		        })
+			})
+		}
+		function getDeckList(){
+			socket.emit('getDeckList',{userId:userId})
+		}
+		
+		socket.on('sendDeckList',function(a){
+			document.getElementById('deckList').innerHTML='';
+		    a.decks.forEach(i=>{
+				document.getElementById('deckList').innerHTML+='<input class="deckButton" type=\'button\' onclick="editDeck('+i+')" value=\'deck '+i+'\'/>';
+			})
+			document.getElementById('deckList').innerHTML+='<input class="deckButton" type=\'button\' onclick="addDeck()" value=\'+\'/>'
+			console.log('got list');
+			console.log(a.decks);
+		})
+		var deckCards=[];//{name:'Duke', cardId:0}
+		var collectionCards=[];
+		lastCardId=0;
+		function popDeckCard(cId){
+			num=0
+			found=false;
+			retval=0;
+			deckCards.forEach(function(i){
+				if (i.cardId==cId){
+					console.log('f')
+					retval=num;
+					found=true;
+				}
+				else{
+					console.log('n')
+				    num++;
+				}
+			});
+			num--;
+			if(found){//возвращает в колоду не то что надо
+				card=deckCards[retval]
+				deckCards.splice(retval,1);
+				//addCardToCollection(card.card);
+				document.getElementById('cardInDeck'+cId).style.display='none'
+			}
+			//alert(found+' '+retval);
+		}
+		function freeDeck(){
+			deckCards=[];
+			document.getElementById('deckView').innerHTML='';
+		}
+		function freeCollection(){
+			collectionCards=[];
+			document.getElementById('allCards').innerHTML='';
+		}
+		function addDeckCard(card){
+			console.log('allCards: ')
+			console.log(allCards)
+			console.log('card:' );
+			console.log(card)
+			if (typeof card==="number")
+			    card=allCards[card];
+			console.log(`sadding ${card} to deck`)
+			console.log(card);
+			thisCardId=lastCardId++;
+			//c=card.card
+			console.log('card:' +card)
+			deckCards.push({name:card.name,cardId:thisCardId,card:card});
+			document.getElementById('deckView').innerHTML+=`
+			<div class="cardInDeck" id='cardInDeck`+(thisCardId)+`' onclick='popDeckCard(`+thisCardId+`)'>
+        		`+card.name+`(`+card.attack+`/`+card.health+`/`+card.cost+`)`+card.abilities+`
+        	        </div>`;
+		}
+		var isEditingDeck=false;
+		function goToMenu(){
+			location.replace('/')
+		}
+		function goBack(){
+                    if(!isEditingDeck)
+                    	goToMenu()
+                    else{
+                        document.getElementById('deckList').style.display='block'
+		        	    document.getElementById('deckEditor').style.display='none'
+		        	    document.getElementById('saveButton').style.display='none'
+		        	    document.getElementById('collectionButton').style.display='block'
+                        isEditingDeck=false;
+                    }
+		}
+		function viewCollection(){
+			location.replace('/collection')
+		}
+		/*function tWait(){
+		  return new Promise(function(resolve,reject){
+		  	 setTimeout(() => resolve("result"), 1000);
+		  })
+	    }*/ 
+		async function save(){
+			resIds=[];
+			deckCards.forEach(i=>{
+				resIds.push(i.card.id);
+			})
+            socket.emit('deck',{user:userId,deckNum:deckNumber+1,deck:resIds})
+			await tWaitSave();
+			goBack();
+		}
+		function tWait(){
+		  return new Promise(function(resolve,reject){
+		  	socket.on('collection',function(data){
+			  resolve(data)
+		    })
+	      })
+		}
+		function tWaitSave(){
+		  return new Promise(function(resolve,reject){
+		  	socket.on('deckSaved',function(data){
+			  resolve(data)
+		    })
+	      })
+		}
+       function getCollection(){
+			return new Promise((res,rej)=>{
+			socket.emit('getCollection',userId)
+			socket.on('collection',i=>{
+				console.log(i);
+				collectionCards=[];
+				i.forEach(j=>{
+					//collectionCardNumbers.push(j.card);
+					collectionCards.push(j.card)
+				})
+				res(collectionCards)
+
+			})
+			})
+		}
+		async function editDeck(num){
+		    deckNumber=num-1;
+			
+            //collectionCards=await getCollection(num);
+			console.log('Editing deck '+num)
+			document.getElementById('deckList').style.display='none'
+			document.getElementById('deckEditor').style.display='block'
+			document.getElementById('saveButton').style.display='block'
+			document.getElementById('collectionButton').style.display='none'
+			freeDeck();
+			
+			freeCollection();
+			console.log('collection is free')
+			isEditingDeck=true;
+			let collectionCards=await getCollection();
+			console.log('got collection cards' + collectionCards)
+            collectionCards.forEach(i=>{addCardToCollection(allCards[i])})
+			getDeck(num);
+			(await getDeck(num)).forEach(i=>{addDeckCard(i)});
+		}
+		thisColCardId=0;
+		function popCollectionCard(cId){
+			num=0
+			found=false;
+			retval=0;
+			collectionCards.forEach(function(i){
+				if (i.cardId==cId){
+					console.log('f')
+					retval=num;
+					found=true;
+				}
+				else{
+					console.log('n')
+				    num++;
+				}
+			});
+			num--;
+			if(found){
+				card=collectionCards[retval];
+				//collectionCards.splice(retval,1);
+				addDeckCard(card.card);
+				//document.getElementById('cardInCollection'+cId).style.display='none'
+			}
+			//alert(found+' '+retval);
+		}
+		function addDeck(){
+			socket.emit('addDeck',{user:userId})
+		}
+		socket.on('deckAdded',function(data){
+			console.log('added')
+			document.getElementById('deckList').innerHTML=
+			    `<input class="deckButton" type='button' onclick="editDeck(`+data+`)" value='deck `+data+`'/>`+
+                document.getElementById('deckList').innerHTML;
+		})
+		function addCardToCollection(card){
+		    document.getElementById('allCards').innerHTML+=`
+		    	<div class="cardInCollection" id='cardInCollection`+(thisColCardId)+`' onclick='popCollectionCard(`+thisColCardId+`)'>
+            		`+card.name+``+`<div>(`+card.attack+`/`+card.health+`/`+card.cost+`)</div>
+            		`+card.abilities+`
+            	</div>`;	
+            collectionCards.push({card:card,cardId:thisColCardId});
+            thisColCardId++;
+		}
+		getDeckList();
+	</script>
+	
+	<style>
+	    *{
+	    	margin: 0;
+	    	padding: 0;
+	    }
+        #menu{
+        	height:400px;
+        	width:900px;
+        	background-color: grey;
+        }
+        #mainMenuPart{
+        	height:290px;
+            padding:20px;
+        }
+        #bottomMenuPart{
+        	height:70px;
+        	padding:10px;
+        	display:flex;
+        	flex-direction:row;
+        }
+        #bottomMenuPart > input{
+        	height:50px;
+        	padding:5px;
+        }
+        #deckList,#deckEditor{
+            background-color: lightgrey;
+            height:300px;
+        }
+        #deckEditor{
+        	display:none;
+        }
+        .deckButton{
+        	padding:10px;
+        	font-size:20px;
+        }
+        #deckEditGrid{
+        	display:grid;
+        	grid-template-columns: 30% 70%; 
+        }
+        #deckView, #allCards{
+        	height:270px;
+        }
+        #deckView{
+        	margin-left:5px;
+        	background-color:#888888;
+        	overflow: auto;
+        }
+        #allCards{
+        	margin-left:5px;
+        	margin-right:5px;
+        	background-color:#888888;
+        	display:grid;
+        	grid-template-columns:repeat(5,20%);
+        	grid-template-rows:repeat(100,55px);
+        	overflow-y:auto;
+        }
+        #saveButton{
+        	display:none;
+        }
+        .cardInDeck, .cardInCollection{
+        	background-color:#EEEEEE;
+        	margin:2px;
+        	padding:2px;
+        }
+        .cardInCollection{
+        	height:50px;
+        }
+		#userInfo{
+			border-color:#335544;
+			border-width:2px;
+			position:fixed;
+			right:20px;
+			width:100px;
+			padding:5px;
+			border-style:solid;
+			border-radius:5px;
+		}
+		#userInfo img{
+			height:32px;
+
+		}
+		.horGrid{
+			display: grid;
+			grid-template-columns: auto auto;
+		}
+    </style>
+</head>
+<body>
+<div id='userInfo'>
+	<div>
+		<div class='horGrid'>
+			<img src='/img/user.png'>
+			<div class='verGrid'>
+				<div><!--login--></div>
+				<div><a class='btn' href='/logout'> Log out</a></div>
+			</div>
+		</div>
+	</div>
+    </div>
+	<div id='menu'>
+	  <div id='mainMenuPart'>
+        <div id="deckList">
+        	<!--<input class="deckButton" type='button' onclick="editDeck(1)" value='deck 1'/>-->
+        	<input class="deckButton" type='button' onclick="addDeck()" value='+'/>
+        </div>
+        <div id="deckEditor">
+        	Deck Editor
+        	<div id="deckEditGrid">
+        	    <div id="deckView">
+        	    	<!-- место для колоды -->
+        	    </div>
+        	    <div id="allCards">
+        	    	
+        	    </div>
+        	</div>
+        </div>
+	  </div>
+	  <div id="bottomMenuPart">
+        <input type="button" name="" value='go back' onclick="goBack()">
+        <div style='display:flex;flex-grow:1'></div>
+        <input type="button" name="" value='save Deck' onclick="save()" id='saveButton'>
+        <input type="button" name="" value='view collection' onclick="viewCollection()" id='collectionButton'>    
+      </div>
+    </div>
+</body>
+</html>

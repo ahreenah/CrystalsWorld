@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style type="text/css">
+        #userInfo {
+            border-color: #335544;
+            border-width: 2px;
+            position: fixed;
+            right: 20px;
+            width: 100px;
+            padding: 5px;
+            border-style: solid;
+            border-radius: 5px;
+        }
+
+        #userInfo img {
+            height: 32px;
+
+        }
+
+        .horGrid {
+            display: grid;
+            grid-template-columns: auto auto;
+        }
+    </style>
+    <title></title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var waitAlert = null;
+        var foundOpponent = false;
+        var gameId = -1;
+        var conceded = false;
+        var socket = io.connect('http://localhost');
+        const userId = '<!--login-->';
+
+        /*socket.on('movePart', function (data) {
+          if (data['gameId']['gameId']==gameId['gameId']){
+              //moveData=data['data'];
+              //console.log(moveData[0]+' '+moveData);
+              switch(moveData[0]){
+              /*	case 'put':{
+                      unitt=moveData[1];
+                      x=moveData[2];
+                      y=moveData[3];
+                      xo=fieldWidth-1-moveData[2];
+                      yo=fieldHeight-1-moveData[3];
+                      field.array[yo][xo]={attack:unitt.attack,unitHealth:unitt.health,unit:new unit(xo*fieldCellWidth,yo*fieldCellHeight,unitt.name,unitt,yo,xo,true)}
+
+                      console.log('opponent putted '+unitt+' at '+x+' '+y+' > '+xo+' '+yo)
+                      break;
+                  }
+                  case 'move':{
+                      x1=fieldHeight-1-moveData[1];
+                      y1=fieldWidth-1-moveData[2];
+                      x2=fieldHeight-1-moveData[3];
+                      y2=fieldWidth-1-moveData[4];
+                      console.log('opponent moved from'+x1+' '+y1+' to '+x2+' '+y2)
+                if (field.array[x2][y2]==0)
+                        move(x1,y1,y2,x2,true);
+                else
+                  f_attack(x1,y1,y2,x2)
+                      break;
+                  }
+              case 'concede':{
+                if (!conceded){
+                  console.log('your opponent conceded')
+                  showEndMenu(true);
+                  conceded=true;
+                }
+                break;
+              }
+              }
+          }
+          yourHeroExists();
+          // else
+          // 	console.log(data['gameId']['gameId'])
+        });
+        */
+        function sockSendMove(d) {
+            socket.emit('movePart', {gameId: gameId, data: d});
+        }
+
+        function sockEndMove() {
+            socket.emit('moveEnd', gameId);
+        }
+
+        socket.on('concede', function (data) {
+            console.log(`concede`)
+            console.log(data)
+            if (data.gameId==gameId.gameId){
+                showEndMenu(true);
+                console.log('opponent conceded');
+            }
+            else{
+                console.log('other match');
+            }
+        })
+        socket.on('gameId', function (data) {
+            console.log(data);
+            playerIdGlobal = data['playerId'] - 1;
+            gameId = data;
+            if (gameId['playerId'] == 2) {
+                console.log('opponent found');
+                setHero();
+                isYourTurn = false;
+                playerFlag.color('red');
+                foundOpponent = true;
+            } else {
+                waitAlert = new alertObject('Waiting');
+            }
+        });
+        //
+        socket.on('securityValue', function (data) {
+            if (securityValue == data) {
+                readyState = true;
+                clearInterval(int);
+                console.log('correct SV');
+            }
+            console.log('got securityValue: ' + data)
+        })
+        socket.on('field', function (data) {
+            if(data.gameId!=gameId.gameId)
+                return;
+            console.log(data.field.securityValue);
+            socket.emit('securityValue', data.field.securityValue)
+            //console.log('got field');
+            //console.log(data)
+            data2 = [];
+            data.field.field.forEach(function (i) {
+                //data2.push({fx:fieldHeight-1-i.fx,fy:fieldWidth-1-i.fy,isYour:!i.isYour,attack:i.attack,health:i.health,abilities:i.co.abilities});
+                data2.push({
+                    fy: fieldHeight - 1 - i.fx,
+                    fx: fieldWidth - 1 - i.fy,
+                    co: new cardObject('a', i.attack, i.health, 1, i.co.abilities),
+                    isYour: !i.isYour
+                })
+            })
+            //console.log(data2);
+            setField(data2);
+            for (let i = 0; i < fieldHeight; i++)
+                for (let j = 0; j < fieldWidth; j++)
+                    if (field.array[i][j] != 0)
+                        if (field.array[i][j].unit.playerId() == playerIdGlobal) {
+                            console.log(i + ' ' + j)
+                            field.array[i][j].unit.canMove = true;
+                            field.array[i][j].unit.canAttack = true;
+                        }
+        })
+        socket.on('found', function (data) {
+            console.log('found for ' + data['gameId'])
+            if (data['gameId'] == gameId['gameId']) {
+                setHero();
+                console.log('opponent found')
+                try {
+                    waitAlert.hide();
+                } finally {
+                }
+            }
+        });
+        socket.on('moveEnd', function (data) {
+            console.log(data + ' ' + gameId['gameId'])
+            if (data == gameId['gameId'])
+                console.log('move is ended (' + data + ')');
+            isYourTurn = true;
+            playerFlag.color('green');
+
+            yourHeroExists();
+        })
+
+        function setHero() {
+            addUnit(new cardObject('Hero', 2, 15, 0, 'h'), 0, 4);
+            addUnit(new cardObject('Hero', 2, 15, 0, 'h'), 6, 0, true);
+            //field.array[4][0]={attack:2,health:15,abilities:[],unit:new unit(2,15)}
+        }
+
+        function startGame() {
+            socket.emit('joinGame');
+        }
+    </script>
+    <script type='text/javascript' src='crafty.js'></script>
+
+</head>
+<body>
+<div id='userInfo'>
+    <div>
+        <div class='horGrid'>
+            <img src='/img/user.png'>
+            <div class='verGrid'>
+                <div><!--login--></div>
+                <div><a class='btn' href='/logout'> Log out</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id='game'/>
+<script src='main_ws.js'></script>
+</body>
+</html>
